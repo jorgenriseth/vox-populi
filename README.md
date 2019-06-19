@@ -1,1 +1,2 @@
-# vox-populi
+# Vox Populi
+This repoistory has been created for code to be used in the course "Democracy in the Digital Age: Populism" on Techincal Unicersity of Munich. summer of 2019. The goal is to implement a new discourse analytical approach to identifying populist actors, while avoiding the coder bias introduced by "dictionary based" text-analysis tools. 
