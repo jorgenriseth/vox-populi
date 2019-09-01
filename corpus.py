@@ -11,7 +11,7 @@ if __name__ == '__main__':
         print("python corpus [max_tweets_per_user]")
         sys.exit()
     
-    number_of_tweets = int(sys.argv[1A)]
+    number_of_tweets = int(sys.argv[1])
     
     # Ensure that the argument is a positive integer.
     assert number_of_tweets > 0, "Number of tweets must be a positive integer"
