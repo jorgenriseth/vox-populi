@@ -11,11 +11,10 @@ if __name__ == '__main__':
         print("python corpus [max_tweets_per_user]")
         sys.exit()
     
-    number_of_tweets = sys.argv[1]
+    number_of_tweets = int(sys.argv[1A)]
     
     # Ensure that the argument is a positive integer.
-    arg_correct = type(number_of_tweets) and number_of_tweets > 0:
-    assert type(number_of_tweets) == int, "Number of tweets must be a positive integer"
+    assert number_of_tweets > 0, "Number of tweets must be a positive integer"
     
     # Create MP-list and run corpuscreator
     create_user_list()
