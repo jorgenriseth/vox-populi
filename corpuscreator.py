@@ -61,7 +61,8 @@ class CorpusCreator:
                 print(f'Reading tweets from {name}')
                 user = info['screen_name']
                 curs = tweepy.Cursor(self.api.user_timeline,
-                                     screen_name=user).items(max_items)
+                                     screen_name=user
+                                     count=200).items(max_items)
 
                 filename = name.lower().replace(' ', '')
                 with open(self.root + filename + '.jsonl', 'w') as f:
