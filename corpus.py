@@ -1,4 +1,5 @@
 import sys
+import os
 
 from utils import create_user_list
 from corpuscreator import CorpusCreator
@@ -17,7 +18,7 @@ if __name__ == '__main__':
     assert number_of_tweets > 0, "Number of tweets must be a positive integer"
     
     # Create MP-list and run corpuscreator
-    if not os.path.isfile('mps.json')
+    if not os.path.isfile('mps.json'):
         create_user_list()
 
     corpus_creator = CorpusCreator()
