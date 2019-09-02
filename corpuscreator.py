@@ -51,7 +51,7 @@ class CorpusCreator:
             
         
             
-    def load_tweets(self, max_items=10000, user=None):
+    def load_tweets(self, max_items=10000):
         """
         For all users in self.users, get [max_items] tweets and
         save each to separate files. 
@@ -71,3 +71,4 @@ class CorpusCreator:
                         json_dump_line(tweet, f)
             except tweepy.TweepError as exc:
                 print(exc)
+                os.remove(self.root + filename + '.jsonl')
