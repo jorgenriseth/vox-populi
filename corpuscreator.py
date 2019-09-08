@@ -46,8 +46,10 @@ class CorpusCreator:
         try:
             os.mkdir(self.root)
             print('Directory "corpus created.')
+            print()
         except:
             print('Directory "corpus" already exists.')
+            print()
             
         
             
@@ -58,17 +60,25 @@ class CorpusCreator:
         """
         for name, info in self.users.items():
             try:
+                os.mkdir(self.root + info['party'].lower().replace(' ', '_'))
+            except FileExistsError:
+                pass
+            
+            filepath = self.root + info['party'].lower() + '/'
+            filepath = filepath + name.lower().replace(' ', '')
+            try:
                 print(f'Reading tweets from {name}')
                 user = info['screen_name']
                 curs = tweepy.Cursor(self.api.user_timeline,
                                      screen_name=user,
                                      count=200).items(max_items)
 
-                filename = name.lower().replace(' ', '')
-                with open(self.root + filename + '.jsonl', 'w') as f:
+                with open(filepath + '.jsonl', 'w') as f:
                     for status in curs:
                         tweet = status._json
                         json_dump_line(tweet, f)
+                        
             except tweepy.TweepError as exc:
                 print(exc)
-                os.remove(self.root + filename + '.jsonl')
+                os.remove(filepath + '.jsonl')
+                

@@ -23,3 +23,4 @@ if __name__ == '__main__':
 
     corpus_creator = CorpusCreator()
     corpus_creator.load_tweets(max_items=number_of_tweets)
+    
