@@ -1,5 +1,4 @@
 import json
-
 import pandas as pd
 
 from nltk.tokenize import TweetTokenizer
@@ -94,9 +93,9 @@ class MPTweetCorpusReader(TwitterCorpusReader):
             df_by_user = pd.DataFrame(columns=['user', 'party', 'text'])
             
             i = -1
-            for user, info in mp_dict.items():
+            for user, info in self._mp_dict.items():
                 # Concatenate all tweets from user into one string.
-                tweets = ' '.join(list(df.loc[df['user'] == user]['text']))
+                tweets = ' '.join(list(self.df.loc[self.df['user'] == user]['text']))
                 
                 if tweets != '':
                     i += 1
