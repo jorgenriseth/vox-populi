@@ -1,11 +1,46 @@
 """
-Miscellaneaous helper functions
+Miscellaneous helper functions
 """
 import tweepy
 import json
 import requests
+import matplotlib.pyplot as plt
 
 from bs4 import BeautifulSoup
+
+
+
+
+"""
+Printing Macros
+"""
+class print_color:
+    PURPLE= '\033[95m'
+    CYAN = '\033[96m'
+    DARKCYAN = '\033[36m'
+    BLUE = '\033[94m'
+    GREEN = '\033[92m'
+    YELLOW = '\033[93m'
+    RED = '\033[91m'
+    GREY = '\033[97m'
+    BLACK = '\033[98m'
+    BOLD = '\033[1m'
+    UNDERLINE = '\033[4m'
+    END = '\033[0m'
+    
+party_color_map = {
+    'Conservative': print_color.BLUE,
+    'Democratic Unionist Party': print_color.YELLOW,
+    'Green Party': print_color.GREEN,
+    'Independent': print_color.GREY,
+    'Labour': print_color.RED,
+    'Liberal Democrat': print_color.PURPLE,
+    'Plaid Cymru': print_color.DARKCYAN,
+    'Scottish National Party': print_color.GREY,
+    'Sinn Fein': print_color.CYAN,
+    'The Independent Group': print_color.BLACK
+}
+
 
 
 def get_tweet_auth(auth_file='credentials.txt'):
@@ -108,3 +143,99 @@ def create_user_list(filename='mps.json', errata='user-errata.txt'):
         
     print(f'MPs on Twitter stored in {filename}')
     
+    
+def visualize(df, color_by='label', num_samples='all', marker_labels=True,
+              ax=None, savename=None):
+    """
+    2D projection plot of all (or a subset of) points in df after 
+    performed clustering. The points color is specified by the value
+    in the "color_by"-argument. 
+    
+    If num_samples is an integer, it will only plot num_samples data points
+    randomly sampled from the available data. This might be useful for a high
+    number of data points.
+    
+    marker_labels specifies whether the points should be plotted alongside the 
+    points index value. (typically user or party).
+    
+    If savename is specified, the resulting figure is saved to disk. 
+    """
+    if num_samples is not 'all':
+        groups = df.sample(num_samples).groupby(color_by)
+    else:
+        groups = df.groupby(color_by)
+        
+    if ax is None:
+        fig, ax = plt.subplots(figsize=(16, 12)) # set size
+        
+    ax.margins(0.05) # Optional, just adds 5% padding to the autoscaling
+    
+    # Loop through groups and plot by color
+    for color, group in groups:
+        ax.plot(group.posx, group.posy, marker='o', ms=6,
+                ls='', label=color)
+        
+        # Configure axes
+        ax.set_aspect('auto')
+        ax.tick_params(
+            axis= 'x',          # changes apply to the x-axis
+            which='both',      # both major and minor ticks are affected
+            bottom='off',      # ticks along the bottom edge are off
+            top='off',         # ticks along the top edge are off
+            labelbottom='off')
+        
+        ax.tick_params(
+            axis= 'y',         # changes apply to the y-axis
+            which='both',      # both major and minor ticks are affected
+            left='off',        # ticks along the bottom edge are off
+            top='off',         # ticks along the top edge are off
+            labelleft='off')
+        
+        ax.legend(numpoints=1, loc=2)
+        
+        if marker_labels:
+            for i in range(len(group)):
+                ax.text(group.iloc[i]['posx'] - 1e-2, group.iloc[i]['posy'] + 8e-3,
+                        group.index[i], size=8)
+        
+    if savename is not None:
+        plt.savefig(savename, dpi=200)
+            
+    return ax
+
+
+
+
+
+
+def cluster_information(df, vectorizer, clusterer, num_words=15,
+                        show_users=True):
+    """
+    Print clusters, and most used features per cluster.
+    """
+    # Ensure that model is allready fitted
+    assert hasattr(clusterer, 'cluster_centers_'), "Need to fit clusterer first."
+    
+    terms = vectorizer.get_feature_names()
+    order_centroids = clusterer.cluster_centers_.argsort()[:, ::-1]
+    num_clusters = clusterer.get_params()['n_clusters']
+
+    for i in range(num_clusters):
+        print()
+        print('=' * 80)
+        print(print_color.BOLD + "Cluster %d:"  % i + print_color.END,
+              end='')
+
+        for ind in order_centroids[i, :15]:
+            print('%s, ' % terms[ind], end='')
+
+        print()
+        
+        if show_users:
+            print('-' * 50)
+            for user in df.loc[df['label'] == i].index:
+                party = df.loc[user]['party']
+                print(user + '(' + party_color_map[party] + party + '), '
+                      + print_color.END, end='')
+            print()
+        print('=' * 80)
