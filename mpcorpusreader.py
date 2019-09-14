@@ -2,7 +2,7 @@ import json
 import pandas as pd
 
 from nltk.tokenize import TweetTokenizer
-from nltk.corpus.reader import TwitterCorpusReader
+from corpuscreator import TwitterCorpusReader
 
 
 

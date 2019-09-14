@@ -206,8 +206,6 @@ def visualize(df, color_by='label', num_samples='all', marker_labels=True,
 
 
 
-
-
 def cluster_information(df, vectorizer, clusterer, num_words=15,
                         show_users=True):
     """
