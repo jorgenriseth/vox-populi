@@ -127,8 +127,7 @@ if __name__ == '__main__':
     assert number_of_tweets > 0, "Number of tweets must be a positive integer"
 
     # Create MP-list and run corpuscreator
-    if not os.path.isfile('mps_test.json'):
-        create_user_list()
+    assert os.path.isfile('mps.json'), "Run mp_dict_creator.py first."
 
-    corpus_creator = CorpusCreator(user_dict='mps_test.json')
+    corpus_creator = CorpusCreator(user_dict='mps.json')
     corpus_creator.load_tweets(max_items=number_of_tweets)
