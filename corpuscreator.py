@@ -1,126 +1,88 @@
 import json
+import os
+import tweepy
 import pandas as pd
 
 from nltk.tokenize import TweetTokenizer
 
+from utils import json_dump_line, get_tweet_auth
 
-
-class MPTweetCorpusReader(TwitterCorpusReader):
+class CorpusCreator:
     """
-    Class cerate specifically for ease of use in text clustering of the 
-    British Member of Parliament tweets.
+    Class for creating corpus structure and loading tweets
+    using tweepy.
+    
+    Structure:
+    -> corpus
+    
+    ----> screen_name1
+    ------> tweet_id1.txt
+    ------> tweet_id2.txt
+    
+    ----> screen_name2
+    ------> tweet_id1.txt
+    ------> tweet_id2.txt
+    .
+    .
+    
     """
     
-    def __init__(self, root, fileids=None, word_tokenizer=TweetTokenizer(),
-                 encoding='utf-8', create_df=False):
-        TwitterCorpusReader.__init__(self, root, fileids, word_tokenizer,
-                                     encoding)
-
-        self.parties = list(set([fileid.split('/')[0] for fileid in self.fileids()]))
-        self.users = [fileid.split('/')[1].split('.')[0] for fileid in self.fileids()]
+    def __init__(self, user_dict=None, rel_path='./',
+                rate_limit_wait=True):
         
-        self.num_tweets = len(self.strings())
-        self.num_parties = len(self.parties)
-        self.num_users = len(self.users)
+        # Get an API-object authorized from 'credentials.txt'
+        auth = get_tweet_auth()
+        self.api = tweepy.API(auth,
+                              wait_on_rate_limit=rate_limit_wait,
+                              wait_on_rate_limit_notify=rate_limit_wait)
         
+        self.root = rel_path + 'corpus/'
         
-        with open(self.root + 'mps.json') as f:
-            self._mp_dict = json.load(f)
-        
-        
-        self.df_savepath = self.root + 'tweet_df.pkl'
-        
-        if create_df:
-            print('Building tweet dataframe.')
-            self._build_dataframe()
-            print('Tweet dataframe built.')
-            print()
-        
+        # Load mp-file from directory
+        if user_dict is None:
+            with open('mps.json') as f:
+                self.users = json.load(f)
         else:
-            try:
-                print("Loading tweet dataframe.")
-                self.df = pd.read_pickle(self.df_savepath)
-                print("Tweet dataframe loaded.")
-                print()
+            self.users = user_dict
+        
+        # Create root filesystem
+        try:
+            os.mkdir(self.root)
+            print('Directory "corpus created.')
+            print()
+        except:
+            print('Directory "corpus" already exists.')
+            print()
             
-            except OSError as exc:
-                self.df = None
-                
-                print('OSError: ' + exc)
-                print("No dataframe created/loaded.")
-                print()
-                
-                
-    def _build_dataframe(self):
-        self.df = pd.DataFrame(columns=['user', 'party', 'userid', 'text'])
-        i = -1    
-        for user, info in self._mp_dict.items():
-            # Get filepath for users tweet
-            user_fileids = (info['party'].lower().replace(' ', '_') + '/' 
-                            + user.lower().replace(' ', '') + '.jsonl')
-
+        
+            
+    def load_tweets(self, max_items=10000, user=None):
+        """
+        For all users in self.users, get [max_items] tweets and
+        save each to separate files. 
+        """
+        for name, info in self.users.items():
             try:
-                user_tweets = corpus.strings(user_fileids)
-
-                for string in user_tweets:
-                    i += 1
-                    self.df.loc[i] = [user, info['party'], info['screen_name'], string]
-
-            except OSError:
-                # File doesn't exists, probably due to locked twitter profile.
+                os.mkdir(self.root + info['party'].lower().replace(' ', '_'))
+            except FileExistsError:
                 pass
+            
+            filepath = self.root + info['party'].lower().replace(' ', '_')
+            filepath = filepath + '/' + name.lower().replace(' ', '')
+            try:
+                print(f'Reading tweets from {name}')
+                user = info['screen_name']
+                curs = tweepy.Cursor(self.api.user_timeline,
+                                     screen_name=user,
+                                     count=200,
+                                     tweet_mode="extended"
+                                     ).items(max_items)
 
-            
-    def to_dataframe(self, samples='tweet', savename=None):
-        """
-        samples = string: {'tweet', 'user', 'party'}
-        
-        Create a dataframe where each row reperesnts one tweet, and stores 
-        as a member variable. If samples is 'user' or 'party', it will return 
-        a dataframe for which all tweets belonging to a single user/party is 
-        concatenated into one. 
-        """
-        assert samples in ("tweet", "user", "party"), "Invalid argument [samples]:" + str(samples)
-        
-        # Create base dataframe.
-        if samples == "tweet":
-            return self.df
-            
-        # Create "lower resolution" dataframes if necessary
-        if samples in ("user", "party"):
-            
-            df_by_user = pd.DataFrame(columns=['user', 'party', 'text'])
-            
-            i = -1
-            for user, info in self._mp_dict.items():
-                # Concatenate all tweets from user into one string.
-                tweets = ' '.join(list(self.df.loc[self.df['user'] == user]['text']))
-                
-                if tweets != '':
-                    i += 1
-                    df_by_user.loc[i] = [user, info['party'], tweets]
-                    
-            # Let name of mp/user be index of dataframe
-            df_by_user.set_index('user', inplace=True)
-            
-            if samples == "party":
-                df_by_party = pd.DataFrame(columns=['party', 'text'])
-                
-                i = -1
-                for party in df_by_user['party'].unique():
-                    # Concatenate tweets from all users in party into single string
-                    tweets = ' '.join(list(df_by_user.loc[df_by_user['party'] == party]['text']))
-                    
-                    if tweets != '':
-                        i += 1
-                        df_by_party.loc[i] = [party, tweets]
+                with open(filepath + '.jsonl', 'w') as f:
+                    for status in curs:
+                        tweet = status._json
+                        json_dump_line(tweet, f)
                         
-                df_by_party.set_index('party', inplace=True)
-                        
-                if savename is not None:
-                    df_by_party.to_pickle(self.root + savename)
-                return df_by_party
-            
-            if savename is not None:
-                df_by_user.to_pickle(self.root + savename)
-            return df_by_user
+            except tweepy.TweepError as exc:
+                print(exc)
+                os.remove(filepath + '.jsonl')

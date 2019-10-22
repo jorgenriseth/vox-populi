@@ -119,6 +119,37 @@ def json_dump_line(json_object, file_object):
     """
     json.dump(json_object, file_object)
     file_object.write('\n')
+    
+    
+def rm_empty_json_in_path(path):
+    """
+    Browses through corpus-files and removes any user.json-files which are 
+    empty for various reasons.
+    """
+    assert os.path.isdir(path), "[path] not a valid directory"
+    
+    # Ensure directories are given with ending '/' for recursion
+    if path[-1] != '/':
+        path += '/'
+    
+    print('Browsing "' + path + '"')
+        
+    for f in os.listdir(path):
+        filepath = path + f
+        if os.path.isfile(filepath) and '.jsonl' in filepath:
+            try:
+                if os.path.getsize(filepath) == 0:
+                    print('Removing ' + filepath)
+                    os.remove(filepath)
+            
+            # Shouldn't happen, but just to make sure.
+            except OSError as e:
+                print(e)
+                pass
+        
+        elif os.path.isdir(filepath):
+            # Browse one dir deeper
+            rm_empty_json_in_path(path + f + '/')
 
 if __name__ == '__main__':
     number_of_tweets = int(input("Number of tweets per user:"))
@@ -131,3 +162,4 @@ if __name__ == '__main__':
 
     corpus_creator = CorpusCreator(user_dict='mps.json')
     corpus_creator.load_tweets(max_items=number_of_tweets)
+    rm_empty_json_in_path('corpus/')

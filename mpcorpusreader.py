@@ -2,9 +2,7 @@ import json
 import pandas as pd
 
 from nltk.tokenize import TweetTokenizer
-from corpuscreator import TwitterCorpusReader
-
-
+from nltk.corpus.reader import TwitterCorpusReader
 
 class MPTweetCorpusReader(TwitterCorpusReader):
     """
@@ -25,7 +23,7 @@ class MPTweetCorpusReader(TwitterCorpusReader):
         self.num_users = len(self.users)
         
         
-        with open(self.root + 'mps.json') as f:
+        with open(self.root + '../mps.json') as f:
             self._mp_dict = json.load(f)
         
         
@@ -50,7 +48,24 @@ class MPTweetCorpusReader(TwitterCorpusReader):
                 print('OSError: ' + exc)
                 print("No dataframe created/loaded.")
                 print()
-                
+    
+    def strings(self, fileids=None):
+        """
+        Returns only the text content of Tweets in the file(s)
+        :return: the given file(s) as a list of Tweets.
+        :rtype: list(str)
+        """
+        fulltweets = self.docs(fileids)
+        tweets = []
+        for jsono in fulltweets:
+            try:
+                text = jsono["full_text"]
+                if isinstance(text, bytes):
+                    text = text.decode(self.encoding)
+                tweets.append(text)
+            except KeyError:
+                pass
+        return tweets
                 
     def _build_dataframe(self):
         self.df = pd.DataFrame(columns=['user', 'party', 'userid', 'text'])
@@ -61,7 +76,7 @@ class MPTweetCorpusReader(TwitterCorpusReader):
                             + user.lower().replace(' ', '') + '.jsonl')
 
             try:
-                user_tweets = corpus.strings(user_fileids)
+                user_tweets = self.strings(user_fileids)
 
                 for string in user_tweets:
                     i += 1
